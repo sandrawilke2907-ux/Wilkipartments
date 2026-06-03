@@ -10,16 +10,11 @@ function detectPlatform(url: string) {
   return "youtube";
 }
 
-const PLACEHOLDER_URLS = [
-  "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  "https://www.tiktok.com/@creator/video/123456789",
-  "https://www.instagram.com/reel/ABC123/",
-];
-
 export default function AnalyzeForm() {
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [steps, setSteps] = useState<string[]>([]);
   const [result, setResult] = useState<{ analysis: VideoAnalysis; demo: boolean; error?: string } | null>(null);
   const [error, setError] = useState("");
 
@@ -32,6 +27,7 @@ export default function AnalyzeForm() {
     setLoading(true);
     setError("");
     setResult(null);
+    setSteps(["🔌 Verbindung wird aufgebaut…"]);
 
     try {
       const res = await fetch("/api/analyze", {
@@ -39,20 +35,52 @@ export default function AnalyzeForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: url.trim(), description: description.trim() }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Analyse fehlgeschlagen");
-      setResult(data);
+
+      if (!res.ok || !res.body) throw new Error("Server-Fehler");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() ?? "";
+
+        for (const part of parts) {
+          let eventType = "message";
+          let dataStr = "";
+
+          for (const line of part.split("\n")) {
+            if (line.startsWith("event: ")) eventType = line.slice(7).trim();
+            if (line.startsWith("data: ")) dataStr = line.slice(6).trim();
+          }
+
+          if (!dataStr) continue;
+          const data = JSON.parse(dataStr);
+
+          if (eventType === "step") {
+            setSteps((prev) => [...prev, data.message]);
+          } else if (eventType === "result") {
+            setResult(data);
+          }
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unbekannter Fehler");
     } finally {
       setLoading(false);
+      setSteps([]);
     }
   }
 
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="relative">
+        <div>
           <label className="block text-sm font-semibold text-[#f0e6ff] mb-2">
             Video-URL eingeben
           </label>
@@ -98,19 +126,17 @@ export default function AnalyzeForm() {
 
         <div>
           <label className="block text-sm font-semibold text-[#f0e6ff] mb-2">
-            Video beschreiben <span className="text-[#9d8ab5] font-normal">(für genaue Analyse)</span>
+            Video beschreiben{" "}
+            <span className="text-[#9d8ab5] font-normal">(optional — wird automatisch transkribiert wenn API-Keys konfiguriert)</span>
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Beschreibe kurz was in deinem Video passiert: Thema, Hook, Struktur, CTA, Musik, Stil... z.B. 'Ich zeige 3 Fehler beim Instagram-Posting, starte mit einer Frage als Hook, nutze Trending Sound, ende mit Link-in-Bio CTA'"
-            rows={4}
+            placeholder="Beschreibe kurz was in deinem Video passiert: Thema, Hook, Struktur, CTA, Musik, Stil…"
+            rows={3}
             className="w-full bg-[#1e1530] border border-[#2a1f40] rounded-xl px-4 py-3 text-[#f0e6ff] placeholder-[#4a3d66] focus:outline-none focus:border-[#db2777] focus:ring-1 focus:ring-[#db2777] transition-colors text-sm resize-none"
             disabled={loading}
           />
-          <p className="text-xs text-[#9d8ab5] mt-1">
-            Je mehr Details, desto präziser die Analyse. Unterstützt: YouTube, TikTok, Instagram Reels
-          </p>
         </div>
       </form>
 
@@ -120,21 +146,26 @@ export default function AnalyzeForm() {
         </div>
       )}
 
-      {loading && (
-        <div className="bg-[#161020] border border-[#2a1f40] rounded-2xl p-8 text-center animate-fade-in-up">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-full border-4 border-[#db2777] border-t-transparent animate-spin-slow" />
-            <div>
-              <p className="text-[#f0e6ff] font-semibold">Gemini analysiert…</p>
-              <p className="text-[#9d8ab5] text-sm mt-1">12 Dimensionen werden bewertet</p>
-            </div>
+      {loading && steps.length > 0 && (
+        <div className="bg-[#161020] border border-[#2a1f40] rounded-2xl p-6 animate-fade-in-up">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-5 h-5 rounded-full border-2 border-[#db2777] border-t-transparent animate-spin-slow flex-shrink-0" />
+            <p className="text-[#f0e6ff] font-semibold text-sm">Analyse läuft…</p>
           </div>
+          <ul className="space-y-2">
+            {steps.map((msg, i) => (
+              <li key={i} className="text-sm text-[#9d8ab5] flex items-start gap-2">
+                <span className="text-[#db2777] mt-0.5">›</span>
+                <span className={i === steps.length - 1 ? "text-[#f0e6ff]" : ""}>{msg}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
       {result?.error && result.demo && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-amber-400 text-sm">
-          <strong>Gemini-Fehler:</strong> {result.error}
+          <strong>Hinweis:</strong> {result.error}
         </div>
       )}
 

@@ -1,6 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { VideoAnalysis } from "@/lib/types";
 import { generateMockAnalysis } from "@/lib/mock-data";
+import { fetchVideoData } from "@/lib/fetch-video";
+import { transcribeAudio } from "@/lib/transcribe";
+
+export const maxDuration = 300;
 
 function detectPlatform(url: string): VideoAnalysis["platform"] {
   if (url.includes("tiktok.com")) return "tiktok";
@@ -8,33 +12,74 @@ function detectPlatform(url: string): VideoAnalysis["platform"] {
   return "youtube";
 }
 
+function sse(event: string, data: object): Uint8Array {
+  return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
 export async function POST(request: NextRequest) {
   const { url, description } = await request.json();
 
   if (!url || typeof url !== "string") {
-    return NextResponse.json({ error: "URL fehlt" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "URL fehlt" }), { status: 400 });
   }
 
   const platform = detectPlatform(url);
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
-  if (!apiKey) {
-    console.log("⚠️  Kein ANTHROPIC_API_KEY gefunden — Demo-Modus aktiv");
-    const mock = generateMockAnalysis(url, platform);
-    return NextResponse.json({ analysis: mock, demo: true, error: "Kein API-Key. Trage ANTHROPIC_API_KEY in .env.local ein." });
-  }
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event: string, data: object) => controller.enqueue(sse(event, data));
 
-  console.log("✅ ANTHROPIC_API_KEY gefunden — starte echte Analyse...");
+      try {
+        if (!apiKey) {
+          send("step", { message: "Demo-Modus aktiv (kein ANTHROPIC_API_KEY)", step: 0 });
+          const mock = generateMockAnalysis(url, platform);
+          send("result", { analysis: mock, demo: true, error: "Kein API-Key. Trage ANTHROPIC_API_KEY in .env.local ein." });
+          controller.close();
+          return;
+        }
 
-  try {
-    const Anthropic = (await import("@anthropic-ai/sdk")).default;
-    const client = new Anthropic({ apiKey });
+        const hasApify = !!process.env.APIFY_API_KEY;
+        const hasAssemblyAI = !!process.env.ASSEMBLYAI_API_KEY;
 
-    const contentInfo = description
-      ? `Plattform: ${platform}\nURL: ${url}\n\nVideo-Beschreibung vom Creator:\n${description}`
-      : `Plattform: ${platform}\nURL: ${url}\n\nHinweis: Keine Beschreibung angegeben — analysiere basierend auf URL-Kontext und typischen ${platform}-Mustern.`;
+        let transcript = description || "";
+        let videoTitle = "";
 
-    const prompt = `Du bist ein Social-Media-Content-Experte. Analysiere dieses Video:\n\n${contentInfo}
+        // Step 1 — fetch video via Apify or youtube-transcript
+        if (platform === "youtube" || hasApify) {
+          send("step", { message: "📥 Video wird geladen…", step: 1 });
+          try {
+            const videoData = await fetchVideoData(url, platform);
+            videoTitle = videoData.title;
+
+            if (videoData.directTranscript) {
+              transcript = videoData.directTranscript;
+              send("step", { message: "✅ Transkript aus YouTube geladen", step: 2 });
+            } else if (videoData.audioUrl && hasAssemblyAI) {
+              // Step 2 — transcribe audio via AssemblyAI
+              send("step", { message: "🎙️ Audio wird transkribiert…", step: 2 });
+              transcript = await transcribeAudio(videoData.audioUrl);
+              send("step", { message: "✅ Transkription abgeschlossen", step: 2 });
+            } else if (videoData.description) {
+              transcript = videoData.description;
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            send("step", { message: `⚠️ ${msg} — weiter mit manueller Beschreibung`, step: 1 });
+          }
+        }
+
+        // Step 3 — Claude analysis
+        send("step", { message: "🧠 Claude analysiert alle 12 Dimensionen…", step: 3 });
+
+        const Anthropic = (await import("@anthropic-ai/sdk")).default;
+        const client = new Anthropic({ apiKey });
+
+        const contentInfo = transcript
+          ? `Plattform: ${platform}\nURL: ${url}${videoTitle ? `\nTitel: ${videoTitle}` : ""}\n\nTranskript / Beschreibung:\n${transcript}`
+          : `Plattform: ${platform}\nURL: ${url}\n\nHinweis: Kein Transkript verfügbar — analysiere basierend auf URL-Kontext und typischen ${platform}-Mustern.`;
+
+        const prompt = `Du bist ein Social-Media-Content-Experte. Analysiere dieses Video:\n\n${contentInfo}
 
 Bewerte das Video auf einer Skala von 0-100 für jede der folgenden 12 Dimensionen:
 1. Hook-Qualität (Neugier-Gap, erster Eindruck, erste 3 Sekunden)
@@ -52,7 +97,7 @@ Bewerte das Video auf einer Skala von 0-100 für jede der folgenden 12 Dimension
 
 Antworte NUR mit validem JSON:
 {
-  "title": "Kurze Videobeschreibung basierend auf der URL",
+  "title": "Kurze Videobeschreibung",
   "viralScore": <Durchschnitt aller 12 Scores>,
   "dimensions": [
     {"name": "Hook-Qualität", "score": <0-100>, "description": "<Begründung auf Deutsch>"},
@@ -73,40 +118,51 @@ Antworte NUR mit validem JSON:
   "improvements": ["<Verbesserung 1>", "<Verbesserung 2>", "<Verbesserung 3>"]
 }`;
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      messages: [{ role: "user", content: prompt }],
-    });
+        const message = await client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 2048,
+          messages: [{ role: "user", content: prompt }],
+        });
 
-    const text = message.content[0].type === "text" ? message.content[0].text : "";
-    // Strip markdown code blocks if present
-    const cleaned = text.replace(/```(?:json)?\s*/g, "").replace(/```/g, "").trim();
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error("Claude Antwort:", text.slice(0, 500));
-      throw new Error("Kein JSON in der Antwort");
-    }
+        const text = message.content[0].type === "text" ? message.content[0].text : "";
+        const cleaned = text.replace(/```(?:json)?\s*/g, "").replace(/```/g, "").trim();
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          console.error("Claude Antwort:", text.slice(0, 500));
+          throw new Error("Kein JSON in der Claude-Antwort");
+        }
 
-    const parsed = JSON.parse(jsonMatch[0]);
-    const analysis: VideoAnalysis = {
-      id: Date.now().toString(),
-      url,
-      platform,
-      title: parsed.title ?? "Analysiertes Video",
-      analyzedAt: new Date().toISOString(),
-      viralScore: parsed.viralScore ?? 0,
-      dimensions: parsed.dimensions ?? [],
-      summary: parsed.summary ?? "",
-      topStrengths: parsed.topStrengths ?? [],
-      improvements: parsed.improvements ?? [],
-    };
+        const parsed = JSON.parse(jsonMatch[0]);
+        const analysis: VideoAnalysis = {
+          id: Date.now().toString(),
+          url,
+          platform,
+          title: parsed.title ?? videoTitle ?? "Analysiertes Video",
+          analyzedAt: new Date().toISOString(),
+          viralScore: parsed.viralScore ?? 0,
+          dimensions: parsed.dimensions ?? [],
+          summary: parsed.summary ?? "",
+          topStrengths: parsed.topStrengths ?? [],
+          improvements: parsed.improvements ?? [],
+        };
 
-    return NextResponse.json({ analysis, demo: false });
-  } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    console.error("❌ Claude Fehler:", errMsg);
-    const mock = generateMockAnalysis(url, platform);
-    return NextResponse.json({ analysis: mock, demo: true, error: `Claude-Fehler: ${errMsg}` });
-  }
+        send("result", { analysis, demo: false });
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error("❌ Analyse Fehler:", errMsg);
+        const mock = generateMockAnalysis(url, platform);
+        send("result", { analysis: mock, demo: true, error: `Fehler: ${errMsg}` });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+    },
+  });
 }

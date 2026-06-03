@@ -38,17 +38,26 @@ export default function AnalyzePage() {
         <AnalyzeForm />
 
         {/* API key hint */}
-        <div className="mt-8 bg-[#1e1530] border border-[#2a1f40] rounded-xl p-4">
-          <p className="text-xs text-[#9d8ab5]">
-            <span className="text-[#f0e6ff] font-semibold">Gemini API-Key einrichten:</span>{" "}
-            Erstelle eine{" "}
-            <code className="bg-[#0d0a14] px-1 py-0.5 rounded text-[#db2777]">.env.local</code>{" "}
-            Datei mit{" "}
-            <code className="bg-[#0d0a14] px-1 py-0.5 rounded text-[#db2777]">ANTHROPIC_API_KEY=dein-key</code>.
-            Key holen auf{" "}
-            <code className="bg-[#0d0a14] px-1 py-0.5 rounded text-[#db2777]">console.anthropic.com</code>.
-            Ohne Key läuft die App im Demo-Modus.
-          </p>
+        <div className="mt-8 bg-[#1e1530] border border-[#2a1f40] rounded-xl p-4 space-y-2">
+          <p className="text-xs font-semibold text-[#f0e6ff]">API-Keys einrichten (.env.local)</p>
+          <div className="space-y-1.5 text-xs text-[#9d8ab5]">
+            <div>
+              <code className="bg-[#0d0a14] px-1 py-0.5 rounded text-[#db2777]">ANTHROPIC_API_KEY</code>
+              {" "}— KI-Analyse · console.anthropic.com{" "}
+              <span className="text-green-400 font-medium">Pflicht</span>
+            </div>
+            <div>
+              <code className="bg-[#0d0a14] px-1 py-0.5 rounded text-[#db2777]">APIFY_API_KEY</code>
+              {" "}— Video laden (TikTok/Instagram) · apify.com{" "}
+              <span className="text-amber-400 font-medium">Optional</span>
+            </div>
+            <div>
+              <code className="bg-[#0d0a14] px-1 py-0.5 rounded text-[#db2777]">ASSEMBLYAI_API_KEY</code>
+              {" "}— Auto-Transkription · assemblyai.com{" "}
+              <span className="text-amber-400 font-medium">Optional</span>
+            </div>
+          </div>
+          <p className="text-xs text-[#4a3d66]">Ohne ANTHROPIC_API_KEY läuft die App im Demo-Modus.</p>
         </div>
       </main>
     </div>
