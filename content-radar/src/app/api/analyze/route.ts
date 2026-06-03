@@ -37,36 +37,36 @@ export async function POST(request: NextRequest) {
     const prompt = `Du bist ein Social-Media-Content-Experte. Analysiere dieses Video:\n\n${contentInfo}
 
 Bewerte das Video auf einer Skala von 0-100 für jede der folgenden 12 Dimensionen:
-1. Hook (erster Eindruck, erste 3 Sekunden)
-2. Storytelling (Narrative, Struktur)
-3. Pacing (Tempo, Rhythmus)
-4. CTA (Call-to-Action)
-5. Hook-Qualität (Neugier-Gap, Spannung)
-6. Emotionale Trigger (Gefühle, Aspiration, FOMO)
-7. Engagement-Muster (Interaktionsanreize)
-8. Visuelle Wirkung (Ästhetik, Schnitte)
-9. Audio / Musik (Ton, Sounddesign)
-10. Relevanz (Aktualität, Zielgruppenfit)
-11. Authentizität (Glaubwürdigkeit)
-12. Conversion-Kraft (Sales-Potential)
+1. Hook-Qualität (Neugier-Gap, erster Eindruck, erste 3 Sekunden)
+2. Storytelling (Narrative, Struktur, roter Faden)
+3. Emotionale Trigger (Gefühle, Aspiration, FOMO, Identifikation)
+4. Visuelle Elemente (Ästhetik, Qualität, visuelle Dynamik)
+5. Engagement-Muster (Interaktionsanreize, Kommentar-Trigger)
+6. CTA-Stärke (Call-to-Action, Handlungsaufforderung)
+7. Pacing & Schnitt (Tempo, Rhythmus, Schnittfrequenz)
+8. Authentizität (Glaubwürdigkeit, Persönlichkeit)
+9. Nischen-Relevanz (Zielgruppenfit, Aktualität, Themenpassung)
+10. Musik & Ton (Sound, Musik, Audio-Qualität)
+11. Text-Overlay (Untertitel, Texteinblendungen, Lesbarkeit)
+12. Viral-Potenzial (Shareability, Replay-Wert, Gesamtpotenzial)
 
 Antworte NUR mit validem JSON:
 {
   "title": "Kurze Videobeschreibung basierend auf der URL",
   "viralScore": <Durchschnitt aller 12 Scores>,
   "dimensions": [
-    {"name": "Hook", "score": <0-100>, "description": "<Begründung auf Deutsch>"},
+    {"name": "Hook-Qualität", "score": <0-100>, "description": "<Begründung auf Deutsch>"},
     {"name": "Storytelling", "score": <0-100>, "description": "<Begründung>"},
-    {"name": "Pacing", "score": <0-100>, "description": "<Begründung>"},
-    {"name": "CTA", "score": <0-100>, "description": "<Begründung>"},
-    {"name": "Hook-Qualität", "score": <0-100>, "description": "<Begründung>"},
     {"name": "Emotionale Trigger", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Visuelle Elemente", "score": <0-100>, "description": "<Begründung>"},
     {"name": "Engagement-Muster", "score": <0-100>, "description": "<Begründung>"},
-    {"name": "Visuelle Wirkung", "score": <0-100>, "description": "<Begründung>"},
-    {"name": "Audio / Musik", "score": <0-100>, "description": "<Begründung>"},
-    {"name": "Relevanz", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "CTA-Stärke", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Pacing & Schnitt", "score": <0-100>, "description": "<Begründung>"},
     {"name": "Authentizität", "score": <0-100>, "description": "<Begründung>"},
-    {"name": "Conversion-Kraft", "score": <0-100>, "description": "<Begründung>"}
+    {"name": "Nischen-Relevanz", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Musik & Ton", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Text-Overlay", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Viral-Potenzial", "score": <0-100>, "description": "<Begründung>"}
   ],
   "summary": "<2-3 Sätze Gesamtbewertung auf Deutsch>",
   "topStrengths": ["<Stärke 1>", "<Stärke 2>", "<Stärke 3>"],

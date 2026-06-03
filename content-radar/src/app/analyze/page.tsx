@@ -56,16 +56,16 @@ export default function AnalyzePage() {
 }
 
 const ANALYSIS_DIMENSIONS = [
-  { icon: "🎣", label: "Hook" },
+  { icon: "🎣", label: "Hook-Qualität" },
   { icon: "📖", label: "Storytelling" },
-  { icon: "⚡", label: "Pacing" },
-  { icon: "🎯", label: "CTA" },
-  { icon: "✨", label: "Hook-Qualität" },
   { icon: "❤️", label: "Emotionale Trigger" },
+  { icon: "👁️", label: "Visuelle Elemente" },
   { icon: "🔄", label: "Engagement-Muster" },
-  { icon: "👁️", label: "Visuelle Wirkung" },
-  { icon: "🎵", label: "Audio / Musik" },
-  { icon: "📍", label: "Relevanz" },
+  { icon: "🎯", label: "CTA-Stärke" },
+  { icon: "⚡", label: "Pacing & Schnitt" },
   { icon: "💎", label: "Authentizität" },
-  { icon: "💰", label: "Conversion-Kraft" },
+  { icon: "📍", label: "Nischen-Relevanz" },
+  { icon: "🎵", label: "Musik & Ton" },
+  { icon: "✍️", label: "Text-Overlay" },
+  { icon: "🚀", label: "Viral-Potenzial" },
 ];

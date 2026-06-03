@@ -20,16 +20,16 @@ export interface VideoAnalysis {
 }
 
 export const DIMENSIONS: { key: string; label: string; icon: string }[] = [
-  { key: "hook",         label: "Hook",              icon: "🎣" },
-  { key: "storytelling", label: "Storytelling",      icon: "📖" },
-  { key: "pacing",       label: "Pacing",            icon: "⚡" },
-  { key: "cta",          label: "CTA",               icon: "🎯" },
-  { key: "hook_quality", label: "Hook-Qualität",     icon: "✨" },
-  { key: "emotional",    label: "Emotionale Trigger", icon: "❤️" },
-  { key: "engagement",   label: "Engagement-Muster", icon: "🔄" },
-  { key: "visuals",      label: "Visuelle Wirkung",  icon: "👁️" },
-  { key: "audio",        label: "Audio / Musik",     icon: "🎵" },
-  { key: "relevance",    label: "Relevanz",          icon: "🎯" },
-  { key: "authenticity", label: "Authentizität",     icon: "💎" },
-  { key: "conversion",   label: "Conversion-Kraft",  icon: "💰" },
+  { key: "hook_quality",   label: "Hook-Qualität",     icon: "🎣" },
+  { key: "storytelling",  label: "Storytelling",       icon: "📖" },
+  { key: "emotional",     label: "Emotionale Trigger", icon: "❤️" },
+  { key: "visuals",       label: "Visuelle Elemente",  icon: "👁️" },
+  { key: "engagement",    label: "Engagement-Muster",  icon: "🔄" },
+  { key: "cta",           label: "CTA-Stärke",         icon: "🎯" },
+  { key: "pacing",        label: "Pacing & Schnitt",   icon: "⚡" },
+  { key: "authenticity",  label: "Authentizität",      icon: "💎" },
+  { key: "relevance",     label: "Nischen-Relevanz",   icon: "📍" },
+  { key: "audio",         label: "Musik & Ton",        icon: "🎵" },
+  { key: "text_overlay",  label: "Text-Overlay",       icon: "✍️" },
+  { key: "viral",         label: "Viral-Potenzial",    icon: "🚀" },
 ];

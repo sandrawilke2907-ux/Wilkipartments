@@ -5,6 +5,7 @@ import { VideoAnalysis } from "@/lib/types";
 import ViralScoreRing from "./ViralScoreRing";
 import DimensionBar from "./DimensionBar";
 import PlatformBadge from "./PlatformBadge";
+import ExportPDFButton from "./ExportPDFButton";
 
 interface Props {
   analysis: VideoAnalysis;
@@ -62,12 +63,15 @@ export default function AnalysisCard({ analysis, isDemo }: Props) {
           </div>
         </div>
 
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="mt-4 text-sm text-[#db2777] hover:text-[#f472b6] transition-colors font-medium"
-        >
-          {expanded ? "▲ Alle 12 Dimensionen ausblenden" : "▼ Alle 12 Dimensionen anzeigen"}
-        </button>
+        <div className="mt-4 flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-sm text-[#db2777] hover:text-[#f472b6] transition-colors font-medium"
+          >
+            {expanded ? "▲ Alle 12 Dimensionen ausblenden" : "▼ Alle 12 Dimensionen anzeigen"}
+          </button>
+          {!isDemo && <ExportPDFButton analysis={analysis} />}
+        </div>
       </div>
 
       {expanded && (
