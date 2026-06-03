@@ -76,8 +76,13 @@ Antworte NUR mit validem JSON:
     });
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Kein JSON in der Antwort");
+    // Strip markdown code blocks if present
+    const cleaned = text.replace(/```(?:json)?\s*/g, "").replace(/```/g, "").trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("Claude Antwort:", text.slice(0, 500));
+      throw new Error("Kein JSON in der Antwort");
+    }
 
     const parsed = JSON.parse(jsonMatch[0]);
     const analysis: VideoAnalysis = {
