@@ -16,54 +16,67 @@ export async function POST(request: NextRequest) {
   }
 
   const platform = detectPlatform(url);
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
-    console.log("⚠️  Kein GEMINI_API_KEY gefunden — Demo-Modus aktiv");
+    console.log("⚠️  Kein ANTHROPIC_API_KEY gefunden — Demo-Modus aktiv");
     const mock = generateMockAnalysis(url, platform);
-    return NextResponse.json({ analysis: mock, demo: true, error: "Kein API-Key gefunden. Prüfe .env.local" });
+    return NextResponse.json({ analysis: mock, demo: true, error: "Kein API-Key. Trage ANTHROPIC_API_KEY in .env.local ein." });
   }
 
-  console.log("✅ GEMINI_API_KEY gefunden — starte echte Analyse...");
+  console.log("✅ ANTHROPIC_API_KEY gefunden — starte echte Analyse...");
 
   try {
-    const { GoogleGenerativeAI } = await import("@google/generative-ai");
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const Anthropic = (await import("@anthropic-ai/sdk")).default;
+    const client = new Anthropic({ apiKey });
 
-    const prompt = `Du bist ein Social-Media-Content-Experte. Analysiere dieses Video von ${platform}: ${url}
+    const prompt = `Du bist ein Social-Media-Content-Experte. Analysiere dieses ${platform}-Video: ${url}
 
 Bewerte das Video auf einer Skala von 0-100 für jede der folgenden 12 Dimensionen:
 1. Hook (erster Eindruck, erste 3 Sekunden)
 2. Storytelling (Narrative, Struktur)
 3. Pacing (Tempo, Rhythmus)
-4. CTA (Call-to-Action, Handlungsaufforderung)
+4. CTA (Call-to-Action)
 5. Hook-Qualität (Neugier-Gap, Spannung)
 6. Emotionale Trigger (Gefühle, Aspiration, FOMO)
-7. Engagement-Muster (Interaktionsanreize, Kommentar-Trigger)
-8. Visuelle Wirkung (Ästhetik, Schnitte, Qualität)
-9. Audio / Musik (Ton, Musik, Sounddesign)
+7. Engagement-Muster (Interaktionsanreize)
+8. Visuelle Wirkung (Ästhetik, Schnitte)
+9. Audio / Musik (Ton, Sounddesign)
 10. Relevanz (Aktualität, Zielgruppenfit)
-11. Authentizität (Glaubwürdigkeit, Persönlichkeit)
-12. Conversion-Kraft (Verbindung zum Angebot, Sales-Potential)
+11. Authentizität (Glaubwürdigkeit)
+12. Conversion-Kraft (Sales-Potential)
 
-Antworte NUR mit validem JSON in diesem Format:
+Antworte NUR mit validem JSON:
 {
-  "title": "Videotitel oder Beschreibung",
-  "viralScore": <Gesamtdurchschnitt 0-100>,
+  "title": "Kurze Videobeschreibung basierend auf der URL",
+  "viralScore": <Durchschnitt aller 12 Scores>,
   "dimensions": [
-    {"name": "Hook", "score": <0-100>, "description": "<kurze Begründung auf Deutsch>"},
-    ...alle 12...
+    {"name": "Hook", "score": <0-100>, "description": "<Begründung auf Deutsch>"},
+    {"name": "Storytelling", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Pacing", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "CTA", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Hook-Qualität", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Emotionale Trigger", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Engagement-Muster", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Visuelle Wirkung", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Audio / Musik", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Relevanz", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Authentizität", "score": <0-100>, "description": "<Begründung>"},
+    {"name": "Conversion-Kraft", "score": <0-100>, "description": "<Begründung>"}
   ],
   "summary": "<2-3 Sätze Gesamtbewertung auf Deutsch>",
   "topStrengths": ["<Stärke 1>", "<Stärke 2>", "<Stärke 3>"],
   "improvements": ["<Verbesserung 1>", "<Verbesserung 2>", "<Verbesserung 3>"]
 }`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 2048,
+      messages: [{ role: "user", content: prompt }],
+    });
 
+    const text = message.content[0].type === "text" ? message.content[0].text : "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("Kein JSON in der Antwort");
 
     const parsed = JSON.parse(jsonMatch[0]);
@@ -83,8 +96,8 @@ Antworte NUR mit validem JSON in diesem Format:
     return NextResponse.json({ analysis, demo: false });
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
-    console.error("❌ Gemini Fehler:", errMsg);
+    console.error("❌ Claude Fehler:", errMsg);
     const mock = generateMockAnalysis(url, platform);
-    return NextResponse.json({ analysis: mock, demo: true, error: `Gemini-Fehler: ${errMsg}` });
+    return NextResponse.json({ analysis: mock, demo: true, error: `Claude-Fehler: ${errMsg}` });
   }
 }

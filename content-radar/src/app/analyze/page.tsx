@@ -10,7 +10,7 @@ export default function AnalyzePage() {
         <div className="mb-10 animate-fade-in-up">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#db2777]/10 border border-[#db2777]/30 rounded-full text-xs text-[#db2777] font-medium mb-4">
             <span className="w-1.5 h-1.5 bg-[#db2777] rounded-full" />
-            Powered by Gemini AI
+            Powered by Claude AI
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-[#f0e6ff] mb-3">
             Video analysieren
@@ -23,7 +23,7 @@ export default function AnalyzePage() {
         {/* What gets analyzed */}
         <div className="bg-[#161020] border border-[#2a1f40] rounded-2xl p-6 mb-8">
           <h2 className="text-sm font-semibold text-[#f0e6ff] mb-4">
-            Gemini analysiert 12 Dimensionen
+            Claude analysiert 12 Dimensionen
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {ANALYSIS_DIMENSIONS.map((d) => (
@@ -44,7 +44,9 @@ export default function AnalyzePage() {
             Erstelle eine{" "}
             <code className="bg-[#0d0a14] px-1 py-0.5 rounded text-[#db2777]">.env.local</code>{" "}
             Datei mit{" "}
-            <code className="bg-[#0d0a14] px-1 py-0.5 rounded text-[#db2777]">GEMINI_API_KEY=dein-key</code>.
+            <code className="bg-[#0d0a14] px-1 py-0.5 rounded text-[#db2777]">ANTHROPIC_API_KEY=dein-key</code>.
+            Key holen auf{" "}
+            <code className="bg-[#0d0a14] px-1 py-0.5 rounded text-[#db2777]">console.anthropic.com</code>.
             Ohne Key läuft die App im Demo-Modus.
           </p>
         </div>
