@@ -19,9 +19,12 @@ export async function POST(request: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
+    console.log("⚠️  Kein GEMINI_API_KEY gefunden — Demo-Modus aktiv");
     const mock = generateMockAnalysis(url, platform);
-    return NextResponse.json({ analysis: mock, demo: true });
+    return NextResponse.json({ analysis: mock, demo: true, error: "Kein API-Key gefunden. Prüfe .env.local" });
   }
+
+  console.log("✅ GEMINI_API_KEY gefunden — starte echte Analyse...");
 
   try {
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
@@ -79,8 +82,9 @@ Antworte NUR mit validem JSON in diesem Format:
 
     return NextResponse.json({ analysis, demo: false });
   } catch (err) {
-    console.error("Gemini error:", err);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error("❌ Gemini Fehler:", errMsg);
     const mock = generateMockAnalysis(url, platform);
-    return NextResponse.json({ analysis: mock, demo: true, error: "Gemini-Analyse fehlgeschlagen, Demo-Modus aktiv" });
+    return NextResponse.json({ analysis: mock, demo: true, error: `Gemini-Fehler: ${errMsg}` });
   }
 }

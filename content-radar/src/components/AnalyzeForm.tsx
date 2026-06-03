@@ -19,7 +19,7 @@ const PLACEHOLDER_URLS = [
 export default function AnalyzeForm() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ analysis: VideoAnalysis; demo: boolean } | null>(null);
+  const [result, setResult] = useState<{ analysis: VideoAnalysis; demo: boolean; error?: string } | null>(null);
   const [error, setError] = useState("");
 
   const platform = url ? detectPlatform(url) : null;
@@ -61,7 +61,7 @@ export default function AnalyzeForm() {
                 type="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder={PLACEHOLDER_URLS[Math.floor(Math.random() * PLACEHOLDER_URLS.length)]}
+                placeholder="https://www.instagram.com/reel/..."
                 className="w-full bg-[#1e1530] border border-[#2a1f40] rounded-xl px-4 py-3.5 text-[#f0e6ff] placeholder-[#4a3d66] focus:outline-none focus:border-[#db2777] focus:ring-1 focus:ring-[#db2777] transition-colors text-sm"
                 disabled={loading}
               />
@@ -115,6 +115,12 @@ export default function AnalyzeForm() {
               <p className="text-[#9d8ab5] text-sm mt-1">12 Dimensionen werden bewertet</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {result?.error && result.demo && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-amber-400 text-sm">
+          <strong>Gemini-Fehler:</strong> {result.error}
         </div>
       )}
 
