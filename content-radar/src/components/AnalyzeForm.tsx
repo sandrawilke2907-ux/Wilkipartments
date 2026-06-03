@@ -18,6 +18,7 @@ const PLACEHOLDER_URLS = [
 
 export default function AnalyzeForm() {
   const [url, setUrl] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ analysis: VideoAnalysis; demo: boolean; error?: string } | null>(null);
   const [error, setError] = useState("");
@@ -36,7 +37,7 @@ export default function AnalyzeForm() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ url: url.trim(), description: description.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Analyse fehlgeschlagen");
@@ -95,9 +96,22 @@ export default function AnalyzeForm() {
           </div>
         </div>
 
-        <p className="text-xs text-[#9d8ab5]">
-          Unterstützt: YouTube, TikTok, Instagram Reels
-        </p>
+        <div>
+          <label className="block text-sm font-semibold text-[#f0e6ff] mb-2">
+            Video beschreiben <span className="text-[#9d8ab5] font-normal">(für genaue Analyse)</span>
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Beschreibe kurz was in deinem Video passiert: Thema, Hook, Struktur, CTA, Musik, Stil... z.B. 'Ich zeige 3 Fehler beim Instagram-Posting, starte mit einer Frage als Hook, nutze Trending Sound, ende mit Link-in-Bio CTA'"
+            rows={4}
+            className="w-full bg-[#1e1530] border border-[#2a1f40] rounded-xl px-4 py-3 text-[#f0e6ff] placeholder-[#4a3d66] focus:outline-none focus:border-[#db2777] focus:ring-1 focus:ring-[#db2777] transition-colors text-sm resize-none"
+            disabled={loading}
+          />
+          <p className="text-xs text-[#9d8ab5] mt-1">
+            Je mehr Details, desto präziser die Analyse. Unterstützt: YouTube, TikTok, Instagram Reels
+          </p>
+        </div>
       </form>
 
       {error && (

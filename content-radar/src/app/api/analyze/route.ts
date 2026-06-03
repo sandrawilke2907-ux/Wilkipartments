@@ -9,7 +9,7 @@ function detectPlatform(url: string): VideoAnalysis["platform"] {
 }
 
 export async function POST(request: NextRequest) {
-  const { url } = await request.json();
+  const { url, description } = await request.json();
 
   if (!url || typeof url !== "string") {
     return NextResponse.json({ error: "URL fehlt" }, { status: 400 });
@@ -30,7 +30,11 @@ export async function POST(request: NextRequest) {
     const Anthropic = (await import("@anthropic-ai/sdk")).default;
     const client = new Anthropic({ apiKey });
 
-    const prompt = `Du bist ein Social-Media-Content-Experte. Analysiere dieses ${platform}-Video: ${url}
+    const contentInfo = description
+      ? `Plattform: ${platform}\nURL: ${url}\n\nVideo-Beschreibung vom Creator:\n${description}`
+      : `Plattform: ${platform}\nURL: ${url}\n\nHinweis: Keine Beschreibung angegeben — analysiere basierend auf URL-Kontext und typischen ${platform}-Mustern.`;
+
+    const prompt = `Du bist ein Social-Media-Content-Experte. Analysiere dieses Video:\n\n${contentInfo}
 
 Bewerte das Video auf einer Skala von 0-100 für jede der folgenden 12 Dimensionen:
 1. Hook (erster Eindruck, erste 3 Sekunden)
